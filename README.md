@@ -14,7 +14,7 @@ This project automatically tracks the compatibility between BloodHound Community
 
 ## Live Site
 
-View the compatibility matrix at: `https://<username>.github.io/bloodhound-compatibility-matrix/`
+View the compatibility matrix at: https://philomath213.github.io/bloodhound-ce-versions/
 
 ## How It Works
 
@@ -60,7 +60,7 @@ The workflow:
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/<username>/bloodhound-compatibility-matrix.git
+   git clone https://github.com/philomath213/bloodhound-ce-versions.git
    cd bloodhound-compatibility-matrix
    ```
 
@@ -160,6 +160,6 @@ Contributions welcome! Please open an issue or pull request.
 
 ## Related Projects
 
-- [BloodHound](https://github.com/SpecterOps/BloodHound) - Active Directory security tool
-- [SharpHound](https://github.com/SpecterOps/SharpHound) - BloodHound data collector for Windows
-- [AzureHound](https://github.com/SpecterOps/AzureHound) - BloodHound data collector for Azure
+- [BloodHound](https://github.com/SpecterOps/BloodHound) - Six Degrees of Domain Admin
+- [SharpHound](https://github.com/SpecterOps/SharpHound) - C# Data Collector for BloodHound
+- [AzureHound](https://github.com/SpecterOps/AzureHound) - Azure Data Exporter for BloodHound
