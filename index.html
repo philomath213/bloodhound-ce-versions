@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BloodHound Version Matrix</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #0d1117;
+            color: #c9d1d9;
+        }
+
+        h1 {
+            color: #58a6ff;
+        }
+
+        .updated {
+            color: #8b949e;
+            font-size: 0.9em;
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #30363d;
+        }
+
+        th {
+            background: #161b22;
+            color: #58a6ff;
+        }
+
+        tr:hover {
+            background: #161b22;
+        }
+
+        a {
+            color: #58a6ff;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>BloodHound Version Matrix</h1>
+    <p class="updated">Last updated: <span id="updated">Loading...</span></p>
+    <table>
+        <thead>
+            <tr>
+                <th>BloodHound</th>
+                <th>SharpHound</th>
+                <th>AzureHound</th>
+            </tr>
+        </thead>
+        <tbody id="matrix"></tbody>
+    </table>
+
+    <script>
+        fetch('bloodhound_versions.json')
+            .then(r => {
+                if (!r.ok) {
+                    throw new Error(`HTTP error! status: ${r.status}`);
+                }
+                return r.json();
+            })
+            .then(data => {
+                if (!data.updated || !data.versions) {
+                    throw new Error('Invalid data format');
+                }
+                document.getElementById('updated').textContent = new Date(data.updated).toLocaleString();
+                document.getElementById('matrix').innerHTML = data.versions.map(v => `
+                    <tr>
+                        <td><a href="https://hub.docker.com/r/specterops/bloodhound/tags?name=${v.bloodhound}">${v.bloodhound}</a></td>
+                        <td><a href="https://github.com/SpecterOps/SharpHound/releases/tag/${v.sharphound}">${v.sharphound}</a></td>
+                        <td><a href="https://github.com/SpecterOps/AzureHound/releases/tag/${v.azurehound}">${v.azurehound}</a></td>
+                    </tr>
+                `).join('');
+            })
+            .catch(error => {
+                console.error('Error loading version matrix:', error);
+                document.getElementById('updated').textContent = 'Error loading data';
+                document.getElementById('matrix').innerHTML = `
+                    <tr>
+                        <td colspan="3" style="text-align: center; color: #f85149;">
+                            Failed to load version matrix. Please try again later.
+                        </td>
+                    </tr>
+                `;
+            });
+    </script>
+</body>
+
+</html>

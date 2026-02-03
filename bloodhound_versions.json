@@ -1,0 +1,80 @@
+{
+  "updated": "2026-02-03T11:55:26.581933+00:00",
+  "versions": [
+    {
+      "bloodhound": "8.5.2",
+      "sharphound": "v2.9.0",
+      "azurehound": "v2.8.3"
+    },
+    {
+      "bloodhound": "8.5.1",
+      "sharphound": "v2.9.0",
+      "azurehound": "v2.8.3"
+    },
+    {
+      "bloodhound": "8.5.0",
+      "sharphound": "v2.9.0",
+      "azurehound": "v2.8.3"
+    },
+    {
+      "bloodhound": "8.4.2",
+      "sharphound": "v2.8.1",
+      "azurehound": "v2.8.2"
+    },
+    {
+      "bloodhound": "8.4.1",
+      "sharphound": "v2.8.1",
+      "azurehound": "v2.8.2"
+    },
+    {
+      "bloodhound": "8.4.0",
+      "sharphound": "v2.8.0",
+      "azurehound": "v2.8.1"
+    },
+    {
+      "bloodhound": "8.3.1",
+      "sharphound": "v2.8.0",
+      "azurehound": "v2.8.1"
+    },
+    {
+      "bloodhound": "8.3.0",
+      "sharphound": "v2.8.0",
+      "azurehound": "v2.8.1"
+    },
+    {
+      "bloodhound": "8.2.0",
+      "sharphound": "v2.7.2",
+      "azurehound": "v2.7.1"
+    },
+    {
+      "bloodhound": "8.1.3",
+      "sharphound": "v2.7.1",
+      "azurehound": "v2.7.1"
+    },
+    {
+      "bloodhound": "8.1.1",
+      "sharphound": "v2.7.1",
+      "azurehound": "v2.7.1"
+    },
+    {
+      "bloodhound": "8.1.0",
+      "sharphound": "v2.7.1",
+      "azurehound": "v2.7.1"
+    },
+    {
+      "bloodhound": "8.0.2",
+      "sharphound": "v2.7.1",
+      "azurehound": "v2.6.0"
+    },
+    {
+      "bloodhound": "8.0.1",
+      "sharphound": "v2.7.0",
+      "azurehound": "v2.6.0"
+    },
+    {
+      "bloodhound": "8.0.0",
+      "sharphound": "v2.7.0",
+      "azurehound": "v2.6.0"
+    }
+  ]
+}
