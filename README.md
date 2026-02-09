@@ -43,7 +43,7 @@ A lightweight, client-side HTML page that:
 ### GitHub Actions ([.github/workflows/update-matrix.yml](.github/workflows/update-matrix.yml))
 
 The workflow:
-- Runs daily at 00:00 UTC (configurable via cron)
+- Runs weekly on Sunday at 00:00 UTC (configurable via cron)
 - Can be triggered manually via workflow dispatch
 - Generates fresh compatibility data on each run
 - Deploys only `index.html` and `bloodhound_versions.json` to GitHub Pages
@@ -98,12 +98,12 @@ To change the update frequency, edit the cron expression in [.github/workflows/u
 
 ```yaml
 schedule:
-  - cron: '0 0 * * *'  # Daily at midnight UTC
+  - cron: '0 0 * * 0'  # Weekly on Sunday at midnight UTC
 ```
 
 Examples:
+- `0 0 * * *` - Daily at midnight UTC
 - `0 */12 * * *` - Every 12 hours
-- `0 0 * * 0` - Weekly on Sunday
 - `0 0 1 * *` - Monthly on the 1st
 
 ## Output Format
