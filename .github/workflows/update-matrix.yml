@@ -13,21 +13,22 @@ on:
       - 'requirements.txt'
       - '.github/workflows/update-matrix.yml'
 
+# Deploy phase (requires pages:write and id-token:write)
 permissions:
-  contents: write
   pages: write
   id-token: write
 
 jobs:
   update-and-deploy:
+    name: Update matrix and deploy
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
 
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
+      # Build phase
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -42,7 +43,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run version matrix script
+      - name: Generate compatibility matrix
         run: python update_matrix.py
 
       - name: Prepare deployment directory
@@ -51,10 +52,11 @@ jobs:
           cp index.html _site/
           cp bloodhound_versions.json _site/
 
+      # Deploy phase (requires pages:write and id-token:write)
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
-      - name: Upload artifact
+      - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: '_site'
