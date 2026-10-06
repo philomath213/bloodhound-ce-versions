@@ -8,6 +8,7 @@ on:
     paths:
       - 'update_matrix.py'
       - 'requirements.txt'
+      - 'index.html'
       - '.github/workflows/update-matrix.yml'
 
 # Deploy phase (requires pages:write and id-token:write)
