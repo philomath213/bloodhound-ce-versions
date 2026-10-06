@@ -4,109 +4,504 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BloodHound Version Matrix</title>
+    <title>BloodHound CE Version Matrix</title>
+    <meta name="description" content="Which SharpHound and AzureHound versions ship with each BloodHound Community Edition release.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
     <style>
-        * {
-            box-sizing: border-box;
+      /* Layout: single centered column; summary card, then filter bar, then the release table with
+         per-collector "lanes" (a vertical line with a node wherever that collector version changed). */
+      :root {
+        --bg: #f5f7fa;
+        --surface: #ffffff;
+        --fg: #18202b;
+        --muted: #5b6676;
+        --line: #dce2ea;
+        --accent: #3a56d4;
+        --accent-soft: #e8ecfc;
+        --sh: #b35a0f;      /* SharpHound lane */
+        --sh-soft: #fbeedd;
+        --az: #0b7a91;      /* AzureHound lane */
+        --az-soft: #dcf1f5;
+        --warn: #8a5a00;
+        --warn-soft: #fdf2d6;
+        --ok: #1d7a46;
+        --ok-soft: #dff3e7;
+        --danger: #b42318;
+        --font-display: "Bricolage Grotesque", "IBM Plex Sans", system-ui, sans-serif;
+        --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+        --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+        --radius: 10px;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) {
+          --bg: #0e1217; --surface: #151b23; --fg: #e4e9f0; --muted: #8d97a6; --line: #26303c;
+          --accent: #93a6ff; --accent-soft: #1e2647;
+          --sh: #f2a654; --sh-soft: #3a2611; --az: #5cc8de; --az-soft: #0f2f37;
+          --warn: #f1c35b; --warn-soft: #33270a; --ok: #6fd39a; --ok-soft: #0f2a1b; --danger: #ff8a80;
+          color-scheme: dark;
         }
+      }
+      :root[data-theme="dark"] {
+        --bg: #0e1217; --surface: #151b23; --fg: #e4e9f0; --muted: #8d97a6; --line: #26303c;
+        --accent: #93a6ff; --accent-soft: #1e2647;
+        --sh: #f2a654; --sh-soft: #3a2611; --az: #5cc8de; --az-soft: #0f2f37;
+        --warn: #f1c35b; --warn-soft: #33270a; --ok: #6fd39a; --ok-soft: #0f2a1b; --danger: #ff8a80;
+        color-scheme: dark;
+      }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background: #0d1117;
-            color: #c9d1d9;
-        }
+      * { box-sizing: border-box; }
+      [hidden] { display: none !important; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--fg);
+        font: 15px/1.55 var(--font-body);
+        padding: 0 16px;
+      }
+      .wrap { max-width: 860px; margin: 0 auto; padding-block: 28px 48px; display: grid; gap: 24px; }
+      a { color: var(--accent); text-decoration: none; }
+      a:hover { text-decoration: underline; }
+      :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+      .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 
-        h1 {
-            color: #58a6ff;
-        }
+      /* Header */
+      header { display: grid; gap: 10px; }
+      .title-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+      h1 {
+        font: 700 clamp(26px, 4.4vw, 34px)/1.1 var(--font-display);
+        letter-spacing: -0.01em; margin: 0; text-wrap: balance;
+      }
+      h1 .ce { color: var(--accent); }
+      .lede { margin: 0; color: var(--muted); max-width: 62ch; }
+      .meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 13px; color: var(--muted); }
+      .pill {
+        display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px;
+        font-size: 12.5px; font-weight: 500; background: var(--ok-soft); color: var(--ok);
+      }
+      .pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+      .pill.stale { background: var(--warn-soft); color: var(--warn); }
+      .theme-btn {
+        font: 500 13px var(--font-body); color: var(--muted); background: transparent;
+        border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px; cursor: pointer;
+      }
+      .theme-btn:hover { color: var(--fg); border-color: var(--muted); }
 
-        .updated {
-            color: #8b949e;
-            font-size: 0.9em;
-            margin-bottom: 20px;
-        }
+      /* Latest card */
+      .latest {
+        background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+        padding: 18px 20px; display: grid; gap: 14px;
+      }
+      .eyebrow { font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+      .combo { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+      .combo-item {
+        display: grid; gap: 4px; padding: 12px 14px; border-radius: var(--radius);
+        background: var(--bg); min-width: 0;
+      }
+      .combo-item .label { font-size: 12.5px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+      .swatch { width: 8px; height: 8px; border-radius: 50%; }
+      .combo-item .val { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+      .combo-item .val a { font: 600 20px var(--font-mono); color: var(--fg); }
+      .copy {
+        font: 500 12px var(--font-body); border: 1px solid var(--line); background: var(--surface);
+        color: var(--muted); border-radius: 6px; padding: 3px 8px; cursor: pointer; flex: none;
+      }
+      .copy:hover { color: var(--fg); border-color: var(--muted); }
+      .copy.done { color: var(--ok); border-color: var(--ok); }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
+      /* Filter bar */
+      .controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+      .search { position: relative; flex: 1 1 260px; min-width: 0; }
+      .search input {
+        width: 100%; font: 15px var(--font-body); color: var(--fg); background: var(--surface);
+        border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px 10px 36px;
+      }
+      .search input::placeholder { color: var(--muted); }
+      .search input:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: transparent; }
+      .search svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); }
+      .seg { display: inline-flex; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); padding: 3px; }
+      .seg button {
+        font: 500 13.5px var(--font-body); border: 0; background: transparent; color: var(--muted);
+        padding: 6px 12px; border-radius: 7px; cursor: pointer;
+      }
+      .seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
+      .answer {
+        margin: 0; padding: 10px 14px; border-radius: var(--radius); background: var(--accent-soft);
+        color: var(--fg); font-size: 14px;
+      }
 
-        th,
-        td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #30363d;
-        }
+      /* Table */
+      .table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+      table { width: 100%; border-collapse: collapse; min-width: 460px; table-layout: fixed; }
+      col.c-bh { width: 30%; }
+      col.c-col { width: 35%; }
+      caption { text-align: left; padding: 12px 16px 0; font-size: 13px; color: var(--muted); }
+      thead th {
+        position: sticky; top: 0; background: var(--surface); z-index: 1;
+        text-align: left; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase;
+        color: var(--muted); font-weight: 600; padding: 12px 16px; border-bottom: 1px solid var(--line);
+      }
+      thead th .swatch { display: inline-block; margin-right: 6px; vertical-align: 1px; }
+      tbody td, tbody th { padding: 0 16px; height: 46px; border-bottom: 1px solid var(--line); vertical-align: middle; text-align: left; font-weight: inherit; }
+      tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
+      tr.group td {
+        height: auto; padding: 14px 16px 6px; border-bottom: 1px solid var(--line);
+        font: 600 12px var(--font-mono); color: var(--muted); letter-spacing: 0.04em; background: var(--bg);
+      }
+      tr.rel:hover > * { background: color-mix(in srgb, var(--accent-soft) 45%, transparent); }
+      tr.rel:target > *, tr.rel.hl > * { background: var(--accent-soft); }
 
-        th {
-            background: #161b22;
-            color: #58a6ff;
-        }
+      .bh { display: flex; align-items: center; gap: 8px; }
+      .bh .perma { color: var(--muted); opacity: 0; font-family: var(--font-mono); width: 10px; }
+      tr.rel:hover .perma, .perma:focus-visible { opacity: 1; }
+      .bh .ver { font: 600 15px var(--font-mono); color: var(--fg); }
+      .bh .ver:hover { color: var(--accent); }
+      .tag {
+        font: 600 10.5px var(--font-body); letter-spacing: 0.06em; text-transform: uppercase;
+        padding: 2px 7px; border-radius: 999px; background: var(--ok-soft); color: var(--ok);
+      }
 
-        tr:hover {
-            background: #161b22;
-        }
+      td.lane { position: relative; padding-left: 34px; }
+      td.lane::before {
+        content: ""; position: absolute; left: 20px; top: 0; bottom: -1px; width: 2px;
+        background: var(--lane-soft);
+      }
+      td.lane.first::before { top: 50%; }
+      td.lane.last::before { bottom: 50%; }
+      td.sh { --lane: var(--sh); --lane-soft: var(--sh-soft); }
+      td.az { --lane: var(--az); --lane-soft: var(--az-soft); }
+      .node {
+        position: absolute; left: 15px; top: 50%; width: 12px; height: 12px; margin-top: -6px;
+        border-radius: 50%; background: var(--surface); border: 3px solid var(--lane);
+      }
+      .cv { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+      .cv a { font: 500 14.5px var(--font-mono); }
+      td.same .cv a { color: var(--muted); }
+      td.changed .cv a { color: var(--lane); font-weight: 600; }
+      .from { font-size: 12px; color: var(--muted); font-family: var(--font-mono); }
 
-        a {
-            color: #58a6ff;
-            text-decoration: none;
-        }
 
-        a:hover {
-            text-decoration: underline;
-        }
+      .empty td { height: auto; padding: 28px 16px; text-align: center; color: var(--muted); }
+      .skel td { height: 46px; }
+      .skel span {
+        display: block; height: 12px; border-radius: 6px; background: var(--line);
+        animation: pulse 1.2s ease-in-out infinite alternate;
+      }
+      @keyframes pulse { from { opacity: 0.45; } to { opacity: 1; } }
+      .error td { height: auto; padding: 28px 16px; text-align: center; color: var(--danger); }
+      .error button { margin-left: 8px; }
+
+      .legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 13px; color: var(--muted); align-items: center; }
+      .legend .k { display: inline-flex; align-items: center; gap: 6px; }
+      .legend .n { width: 10px; height: 10px; border-radius: 50%; border: 2.5px solid var(--sh); background: var(--surface); }
+      .legend .n.az { border-color: var(--az); }
+
+      footer { font-size: 13px; color: var(--muted); display: grid; gap: 6px; border-top: 1px solid var(--line); padding-top: 16px; }
+      footer p { margin: 0; max-width: 70ch; }
+      footer code { font-family: var(--font-mono); font-size: 12.5px; background: var(--surface); border: 1px solid var(--line); padding: 1px 5px; border-radius: 5px; }
+
+      @media (max-width: 600px) {
+        .combo { grid-template-columns: minmax(0, 1fr); }
+        .combo-item .val a { font-size: 18px; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .skel span { animation: none; }
+      }
     </style>
 </head>
 
 <body>
-    <h1>BloodHound Version Matrix</h1>
-    <p class="updated">Last updated: <span id="updated">Loading...</span></p>
-    <table>
-        <thead>
+    <div class="wrap">
+      <header>
+        <div class="title-row">
+          <h1>BloodHound <span class="ce">CE</span> Version Matrix</h1>
+          <button class="theme-btn" id="theme-btn" type="button" aria-label="Switch color theme">Theme: system</button>
+        </div>
+        <p class="lede">Which SharpHound and AzureHound versions ship with each BloodHound Community Edition release. Collect with the matching versions so your data ingests cleanly.</p>
+        <div class="meta" aria-live="polite">
+          <span class="pill" id="fresh">Loading data…</span>
+          <span id="updated-abs"></span>
+        </div>
+      </header>
+
+      <section class="latest" id="latest" aria-label="Latest release" hidden>
+        <span class="eyebrow">Latest release</span>
+        <div class="combo" id="combo"></div>
+      </section>
+
+      <section style="display:grid;gap:12px" aria-label="Find a version">
+        <div class="controls">
+          <label class="search" for="q">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.6"/><path d="M11 11l3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+            <input id="q" type="search" autocomplete="off" spellcheck="false" placeholder="Filter by any version, e.g. 8.4 or v2.8.0" aria-label="Filter by any version">
+          </label>
+          <div class="seg" role="group" aria-label="Rows to show">
+            <button type="button" id="show-all" aria-pressed="true">All releases</button>
+            <button type="button" id="show-changes" aria-pressed="false">Collector changes</button>
+          </div>
+        </div>
+        <p class="answer" id="answer" hidden></p>
+      </section>
+
+      <div class="legend" aria-hidden="true">
+        <span class="k"><span class="n"></span>SharpHound version changed</span>
+        <span class="k"><span class="n az"></span>AzureHound version changed</span>
+        <span>Grey values are unchanged from the release below.</span>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <caption>Newest first, grouped by minor release. Hover a row and use # to copy a direct link.</caption>
+          <colgroup><col class="c-bh"><col class="c-col"><col class="c-col"></colgroup>
+          <thead>
             <tr>
-                <th>BloodHound</th>
-                <th>SharpHound</th>
-                <th>AzureHound</th>
+              <th scope="col">BloodHound</th>
+              <th scope="col"><span class="swatch" style="background:var(--sh)"></span>SharpHound</th>
+              <th scope="col"><span class="swatch" style="background:var(--az)"></span>AzureHound</th>
             </tr>
-        </thead>
-        <tbody id="matrix"></tbody>
-    </table>
+          </thead>
+          <tbody id="matrix">
+            <tr class="skel"><td><span style="width:70px"></span></td><td><span style="width:80px"></span></td><td><span style="width:80px"></span></td></tr>
+            <tr class="skel"><td><span style="width:70px"></span></td><td><span style="width:80px"></span></td><td><span style="width:80px"></span></td></tr>
+            <tr class="skel"><td><span style="width:70px"></span></td><td><span style="width:80px"></span></td><td><span style="width:80px"></span></td></tr>
+            <tr class="skel"><td><span style="width:70px"></span></td><td><span style="width:80px"></span></td><td><span style="width:80px"></span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <footer>
+        <p>Versions come from the <span class="mono">SHARPHOUND_VERSION</span> and <span class="mono">AZUREHOUND_VERSION</span> build arguments of each <span class="mono">specterops/bloodhound</span> image. The data refreshes weekly.</p>
+        <p>Scripting against it? Fetch <a href="bloodhound_versions.json"><code>bloodhound_versions.json</code></a>. Source and issues on <a href="https://github.com/philomath213/bloodhound-ce-versions">GitHub</a>. Not affiliated with SpecterOps.</p>
+      </footer>
+    </div>
 
     <script>
-        fetch('bloodhound_versions.json')
-            .then(r => {
-                if (!r.ok) {
-                    throw new Error(`HTTP error! status: ${r.status}`);
-                }
-                return r.json();
-            })
-            .then(data => {
-                if (!data.updated || !data.versions) {
-                    throw new Error('Invalid data format');
-                }
-                document.getElementById('updated').textContent = new Date(data.updated).toLocaleString();
-                document.getElementById('matrix').innerHTML = data.versions.map(v => `
-                    <tr>
-                        <td><a href="https://hub.docker.com/r/specterops/bloodhound/tags?name=${v.bloodhound}">${v.bloodhound}</a></td>
-                        <td><a href="https://github.com/SpecterOps/SharpHound/releases/tag/${v.sharphound}">${v.sharphound}</a></td>
-                        <td><a href="https://github.com/SpecterOps/AzureHound/releases/tag/${v.azurehound}">${v.azurehound}</a></td>
-                    </tr>
-                `).join('');
-            })
-            .catch(error => {
-                console.error('Error loading version matrix:', error);
-                document.getElementById('updated').textContent = 'Error loading data';
-                document.getElementById('matrix').innerHTML = `
-                    <tr>
-                        <td colspan="3" style="text-align: center; color: #f85149;">
-                            Failed to load version matrix. Please try again later.
-                        </td>
-                    </tr>
-                `;
-            });
+    (() => {
+      const STALE_DAYS = 14;
+      const $ = (id) => document.getElementById(id);
+      const strip = (v) => String(v).replace(/^v/i, '');
+      const links = {
+        notes: (v) => `https://github.com/SpecterOps/BloodHound/releases/tag/v${strip(v)}`,
+        sh: (v) => `https://github.com/SpecterOps/SharpHound/releases/tag/${v}`,
+        az: (v) => `https://github.com/SpecterOps/AzureHound/releases/tag/${v}`,
+      };
+      const COLLECTORS = [
+        { key: 'sharphound', cls: 'sh', name: 'SharpHound', color: 'var(--sh)' },
+        { key: 'azurehound', cls: 'az', name: 'AzureHound', color: 'var(--az)' },
+      ];
+
+      function el(tag, props = {}, ...kids) {
+        const n = document.createElement(tag);
+        for (const [k, v] of Object.entries(props)) {
+          if (k === 'class') n.className = v;
+          else if (k === 'text') n.textContent = v;
+          else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+          else n.setAttribute(k, v);
+        }
+        for (const kid of kids) if (kid != null) n.append(kid);
+        return n;
+      }
+      const ext = (href, text, cls) => el('a', { href, text, target: '_blank', rel: 'noopener noreferrer', ...(cls ? { class: cls } : {}) });
+
+      async function copy(text, btn) {
+        const label = btn.textContent;
+        try {
+          await navigator.clipboard.writeText(text);
+          btn.textContent = 'Copied';
+        } catch {
+          btn.textContent = 'Copy failed';
+        }
+        btn.classList.add('done');
+        setTimeout(() => { btn.textContent = label; btn.classList.remove('done'); }, 1400);
+      }
+
+      /* Theme toggle: system -> light -> dark */
+      const themes = ['system', 'light', 'dark'];
+      let theme = 'system';
+      try { theme = localStorage.getItem('bh-theme') || 'system'; } catch {}
+      function applyTheme() {
+        if (theme === 'system') document.documentElement.removeAttribute('data-theme');
+        else document.documentElement.setAttribute('data-theme', theme);
+        $('theme-btn').textContent = `Theme: ${theme}`;
+      }
+      $('theme-btn').addEventListener('click', () => {
+        theme = themes[(themes.indexOf(theme) + 1) % themes.length];
+        try { localStorage.setItem('bh-theme', theme); } catch {}
+        applyTheme();
+      });
+      applyTheme();
+
+      /* Freshness */
+      function renderFreshness(iso) {
+        const d = new Date(iso);
+        const days = (Date.now() - d.getTime()) / 864e5;
+        const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
+        let rel;
+        if (days < 1) rel = rtf.format(-Math.round(days * 24), 'hour');
+        else if (days < 45) rel = rtf.format(-Math.round(days), 'day');
+        else rel = rtf.format(-Math.round(days / 30.4), 'month');
+        const pill = $('fresh');
+        pill.textContent = `Updated ${rel}`;
+        pill.title = d.toLocaleString();
+        if (days > STALE_DAYS) {
+          pill.classList.add('stale');
+          pill.textContent = `Updated ${rel}, the weekly refresh may be failing`;
+        }
+        $('updated-abs').textContent = d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+      }
+
+      /* Latest card */
+      function renderLatest(v) {
+        const items = [
+          { label: 'BloodHound CE', color: 'var(--accent)', ver: v.bloodhound, href: links.notes(v.bloodhound) },
+          { label: 'SharpHound', color: 'var(--sh)', ver: v.sharphound, href: links.sh(v.sharphound) },
+          { label: 'AzureHound', color: 'var(--az)', ver: v.azurehound, href: links.az(v.azurehound) },
+        ];
+        $('combo').replaceChildren(...items.map((it) => {
+          const btn = el('button', { class: 'copy', type: 'button', text: 'Copy', 'aria-label': `Copy ${it.label} version ${it.ver}` });
+          btn.addEventListener('click', () => copy(it.ver, btn));
+          const sw = el('span', { class: 'swatch' }); sw.style.background = it.color;
+          return el('div', { class: 'combo-item' },
+            el('span', { class: 'label' }, sw, it.label),
+            el('div', { class: 'val' }, ext(it.href, it.ver), btn));
+        }));
+        $('latest').hidden = false;
+      }
+
+      /* Table */
+      let rows = [];
+      function build(versions) {
+        // versions are newest first; a collector "changed" at i if it differs from the older row i+1
+        rows = versions.map((v, i) => {
+          const older = versions[i + 1];
+          const changed = {};
+          for (const c of COLLECTORS) changed[c.key] = !older || older[c.key] !== v[c.key];
+          const [maj, min] = strip(v.bloodhound).split('.');
+          return { v, i, older, changed, group: `${maj}.${min}.x`, anyChange: changed.sharphound || changed.azurehound };
+        });
+      }
+
+      function collectorCell(r, c, isFirst, isLast) {
+        const ver = r.v[c.key];
+        const changed = r.changed[c.key];
+        const td = el('td', { class: `lane ${c.cls} ${changed ? 'changed' : 'same'}${isFirst ? ' first' : ''}${isLast ? ' last' : ''}` });
+        if (changed) td.append(el('span', { class: 'node', 'aria-hidden': 'true' }));
+        const cv = el('div', { class: 'cv' }, ext(links[c.cls](ver), ver));
+        if (changed && r.older) cv.append(el('span', { class: 'from', text: `from ${r.older[c.key]}` }));
+        td.append(cv);
+        return td;
+      }
+
+      function render() {
+        const q = strip($('q').value.trim().toLowerCase());
+        const changesOnly = $('show-changes').getAttribute('aria-pressed') === 'true';
+        const match = (r) => !q || [r.v.bloodhound, r.v.sharphound, r.v.azurehound].some((x) => strip(x).toLowerCase().includes(q));
+        const visible = rows.filter((r) => match(r) && (!changesOnly || r.anyChange));
+        const out = [];
+        let group = null;
+        visible.forEach((r, idx) => {
+          if (r.group !== group) {
+            group = r.group;
+            out.push(el('tr', { class: 'group' }, el('td', { colspan: '3', text: `BloodHound ${group}` })));
+          }
+          const isFirst = idx === 0;
+          const isLast = idx === visible.length - 1;
+          const perma = el('a', { class: 'perma', href: `#${r.v.bloodhound}`, text: '#', 'aria-label': `Copy link to BloodHound ${r.v.bloodhound}` });
+          perma.addEventListener('click', (e) => {
+            e.preventDefault();
+            history.replaceState(null, '', `#${r.v.bloodhound}`);
+            highlight(r.v.bloodhound);
+            const url = location.href;
+            navigator.clipboard?.writeText(url).catch(() => {});
+          });
+          const bh = el('div', { class: 'bh' }, perma, ext(links.notes(r.v.bloodhound), r.v.bloodhound, 'ver'));
+          if (r.i === 0) bh.append(el('span', { class: 'tag', text: 'Latest' }));
+          out.push(el('tr', { class: 'rel', id: r.v.bloodhound },
+            el('th', { scope: 'row' }, bh),
+            ...COLLECTORS.map((c) => collectorCell(r, c, isFirst, isLast))));
+        });
+        if (!out.length) {
+          out.push(el('tr', { class: 'empty' }, el('td', { colspan: '3', text: `No release matches "${$('q').value.trim()}". Try a shorter version such as 8.4 or 2.8.` })));
+        }
+        $('matrix').replaceChildren(...out);
+        renderAnswer(q);
+        const hash = decodeURIComponent(location.hash.slice(1));
+        if (hash) highlight(hash, false);
+      }
+
+      /* Plain-language answer for an exact version */
+      function renderAnswer(q) {
+        const box = $('answer');
+        box.hidden = true;
+        if (!q) return;
+        const bh = rows.find((r) => strip(r.v.bloodhound) === q);
+        if (bh) {
+          box.textContent = '';
+          box.append('BloodHound ', el('strong', { class: 'mono', text: bh.v.bloodhound }), ' bundles SharpHound ',
+            el('strong', { class: 'mono', text: bh.v.sharphound }), ' and AzureHound ', el('strong', { class: 'mono', text: bh.v.azurehound }), '.');
+          box.hidden = false;
+          return;
+        }
+        for (const c of COLLECTORS) {
+          const hits = rows.filter((r) => strip(r.v[c.key]) === q);
+          if (!hits.length) continue;
+          const newest = hits[0].v.bloodhound, oldest = hits[hits.length - 1].v.bloodhound;
+          box.textContent = '';
+          box.append(`${c.name} `, el('strong', { class: 'mono', text: hits[0].v[c.key] }), ' ships with BloodHound ',
+            el('strong', { class: 'mono', text: hits.length === 1 ? newest : `${oldest} to ${newest}` }),
+            ` (${hits.length} release${hits.length === 1 ? '' : 's'}).`);
+          box.hidden = false;
+          return;
+        }
+      }
+
+      function highlight(id, scroll = true) {
+        document.querySelectorAll('tr.hl').forEach((t) => t.classList.remove('hl'));
+        const row = document.getElementById(id);
+        if (!row) return;
+        row.classList.add('hl');
+        if (scroll) row.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+      }
+
+      $('q').addEventListener('input', render);
+      for (const id of ['show-all', 'show-changes']) {
+        $(id).addEventListener('click', () => {
+          $('show-all').setAttribute('aria-pressed', String(id === 'show-all'));
+          $('show-changes').setAttribute('aria-pressed', String(id === 'show-changes'));
+          render();
+        });
+      }
+      window.addEventListener('hashchange', () => highlight(decodeURIComponent(location.hash.slice(1))));
+
+      function showError() {
+        $('fresh').textContent = 'Could not load data';
+        $('fresh').classList.add('stale');
+        const retry = el('button', { class: 'copy', type: 'button', text: 'Try again' });
+        retry.addEventListener('click', load);
+        $('matrix').replaceChildren(el('tr', { class: 'error' },
+          el('td', { colspan: '3' }, 'The version data did not load. Check your connection, then', retry)));
+      }
+
+      async function load() {
+        try {
+          const r = await fetch('bloodhound_versions.json', { cache: 'no-cache' });
+          if (!r.ok) throw new Error(`HTTP ${r.status}`);
+          const data = await r.json();
+          if (!data.updated || !Array.isArray(data.versions) || !data.versions.length) throw new Error('Invalid data format');
+          renderFreshness(data.updated);
+          renderLatest(data.versions[0]);
+          build(data.versions);
+          render();
+          const hash = decodeURIComponent(location.hash.slice(1));
+          if (hash) highlight(hash);
+        } catch (err) {
+          console.error('Error loading version matrix:', err);
+          showError();
+        }
+      }
+      load();
+    })();
     </script>
 </body>
 
