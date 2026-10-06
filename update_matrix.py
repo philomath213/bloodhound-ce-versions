@@ -10,20 +10,32 @@ from datetime import datetime, timezone
 from packaging import version
 
 
-def get_all_tags(repository: str, page_size: int = 100, max_retries: int = 3) -> list:
-    """Get all available tags for a repository with pagination."""
+def get_all_tags(repository: str, page_size: int = 1000, max_retries: int = 3) -> list:
+    """Get all available tags for a repository from the Docker registry API.
+
+    The Docker Hub API (hub.docker.com/v2/.../tags) refuses anonymous requests
+    past 1000 results, so list tags via the registry API instead.
+    """
+    token_response = requests.get(
+        "https://auth.docker.io/token",
+        params={"service": "registry.docker.io", "scope": f"repository:{repository}:pull"},
+        timeout=30,
+    )
+    token_response.raise_for_status()
+    headers = {"Authorization": f"Bearer {token_response.json()['token']}"}
+
     tags = []
-    url = f"https://hub.docker.com/v2/repositories/{repository}/tags"
-    params = {"page_size": page_size}
+    url = f"https://registry-1.docker.io/v2/{repository}/tags/list"
+    params = {"n": page_size}
 
     while url:
         for attempt in range(max_retries):
             try:
-                response = requests.get(url, params=params, timeout=30)
+                response = requests.get(url, params=params, headers=headers, timeout=30)
                 response.raise_for_status()
-                data = response.json()
-                tags.extend(t["name"] for t in data["results"])
-                url = data.get("next")
+                tags.extend(response.json().get("tags") or [])
+                next_link = response.links.get("next", {}).get("url")
+                url = requests.compat.urljoin(url, next_link) if next_link else None
                 params = {}  # params already in next URL
                 break
             except requests.RequestException as e:
