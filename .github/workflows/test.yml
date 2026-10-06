@@ -1,0 +1,53 @@
+name: Test
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Unit and integration tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run unit tests
+        run: python -m unittest discover -s tests -v
+
+      # Hits Docker Hub for real to catch upstream API changes
+      - name: Generate compatibility matrix
+        run: python update_matrix.py
+
+      - name: Validate generated matrix
+        run: |
+          python - <<'EOF'
+          import json
+
+          with open("bloodhound_versions.json") as f:
+              data = json.load(f)
+
+          versions = data["versions"]
+          assert versions, "matrix is empty"
+          for entry in versions:
+              assert set(entry) == {"bloodhound", "sharphound", "azurehound"}, entry
+          tags = {entry["bloodhound"] for entry in versions}
+          assert "8.0.0" in tags, "expected 8.0.0 in matrix"
+          print(f"Matrix OK: {len(versions)} versions, latest {versions[0]['bloodhound']}")
+          EOF
