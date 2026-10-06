@@ -35,19 +35,26 @@ jobs:
       - name: Generate compatibility matrix
         run: python update_matrix.py
 
+      # Published versions don't disappear, so every version in the committed
+      # matrix must still be present; a missing one means tags were lost.
       - name: Validate generated matrix
         run: |
+          git show HEAD:bloodhound_versions.json > "$RUNNER_TEMP/baseline.json"
           python - <<'EOF'
           import json
+          import os
 
           with open("bloodhound_versions.json") as f:
-              data = json.load(f)
+              versions = json.load(f)["versions"]
+          with open(os.path.join(os.environ["RUNNER_TEMP"], "baseline.json")) as f:
+              baseline = json.load(f)["versions"]
 
-          versions = data["versions"]
           assert versions, "matrix is empty"
           for entry in versions:
               assert set(entry) == {"bloodhound", "sharphound", "azurehound"}, entry
+
           tags = {entry["bloodhound"] for entry in versions}
-          assert "8.0.0" in tags, "expected 8.0.0 in matrix"
-          print(f"Matrix OK: {len(versions)} versions, latest {versions[0]['bloodhound']}")
+          missing = sorted({entry["bloodhound"] for entry in baseline} - tags)
+          assert not missing, f"versions in committed matrix missing from generated one: {missing}"
+          print(f"Matrix OK: {len(versions)} versions (baseline {len(baseline)}), latest {versions[0]['bloodhound']}")
           EOF
