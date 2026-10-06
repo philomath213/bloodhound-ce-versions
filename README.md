@@ -34,11 +34,14 @@ The Python script:
 
 ### Static Site ([index.html](index.html))
 
-A lightweight, client-side HTML page that:
-- Loads the JSON data
-- Displays the matrix in a clean, responsive table
-- Links to Docker Hub and GitHub releases
-- Uses a dark theme matching GitHub's aesthetic
+A single, dependency-free HTML page (no build step) that:
+- Loads the JSON data and shows the latest BloodHound release with its bundled collectors, with copy buttons
+- Filters the matrix by any BloodHound, SharpHound or AzureHound version, and answers exact lookups (e.g. which BloodHound releases ship SharpHound `v2.8.0`)
+- Marks the release where each collector version changed, with an option to show only those releases
+- Groups releases by minor version and supports direct links to a release (e.g. `#8.4.1`)
+- Links every version to its GitHub release notes
+- Shows when the data was last refreshed and warns if it is more than 14 days old
+- Follows the system light/dark theme, with a manual toggle
 
 ### GitHub Actions ([.github/workflows/update-matrix.yml](.github/workflows/update-matrix.yml))
 
